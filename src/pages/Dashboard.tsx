@@ -1,31 +1,51 @@
+
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DashboardCard from "@/components/DashboardCard";
 import { Package, Users, MessageCircle, User, LogOut, Star, Clock, Truck } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, orders, suppliers, getConversations, logout } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  if (!user) {
+    return null;
+  }
+
+  const conversations = getConversations();
+  const recentOrders = orders.slice(0, 5);
+  const topSupplier = suppliers.find(s => s.rating >= 4.8) || suppliers[0];
+  const lastDelivery = orders.find(o => o.status === 'delivered');
+  const nextDelivery = orders.find(o => o.status === 'shipped');
 
   const dashboardItems = [
     {
       icon: Users,
       title: "Suppliers",
-      count: 24,
+      count: suppliers.length,
       color: "success" as const,
       onClick: () => navigate("/suppliers")
     },
     {
       icon: Package,
       title: "Orders",
-      count: 8,
+      count: orders.length,
       color: "warning" as const,
       onClick: () => navigate("/orders")
     },
     {
       icon: MessageCircle,
       title: "Chat",
-      count: 3,
+      count: conversations.length,
       color: "primary" as const,
       onClick: () => navigate("/chat")
     },
@@ -38,9 +58,9 @@ const Dashboard = () => {
   ];
 
   const quickStats = [
-    { label: "Top Supplier", value: "Fresh Veggies Co", icon: Star },
-    { label: "Last Delivery", value: "2 days ago", icon: Clock },
-    { label: "Next Delivery", value: "Tomorrow", icon: Truck }
+    { label: "Top Supplier", value: topSupplier.name, icon: Star },
+    { label: "Last Delivery", value: lastDelivery ? "2 days ago" : "No deliveries yet", icon: Clock },
+    { label: "Next Delivery", value: nextDelivery ? "Tomorrow" : "No pending deliveries", icon: Truck }
   ];
 
   return (
@@ -49,13 +69,16 @@ const Dashboard = () => {
       <div className="bg-gradient-primary text-primary-foreground p-4">
         <div className="container mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Welcome, Rajesh!</h1>
-            <p className="opacity-90">Rajesh's Street Food Corner</p>
+            <h1 className="text-2xl font-bold">Welcome, {user.name}!</h1>
+            <p className="opacity-90">{user.businessName}</p>
           </div>
           <Button 
             variant="outline" 
             size="icon"
-            onClick={() => navigate("/")}
+            onClick={() => {
+              logout();
+              navigate("/");
+            }}
             className="border-white text-white hover:bg-white hover:text-primary"
           >
             <LogOut className="w-5 h-5" />
@@ -98,27 +121,41 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-success-light">
-                <div className="w-2 h-2 bg-success rounded-full"></div>
-                <div className="flex-1">
-                  <p className="font-medium">Order delivered from Fresh Veggies Co</p>
-                  <p className="text-sm text-muted-foreground">2 hours ago</p>
+              {recentOrders.length > 0 ? recentOrders.map((order, index) => (
+                <div key={order.id} className={`flex items-center gap-3 p-3 rounded-lg ${
+                  order.status === 'delivered' ? 'bg-success-light' :
+                  order.status === 'shipped' ? 'bg-primary-light' :
+                  order.status === 'accepted' ? 'bg-warning-light' :
+                  'bg-muted'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    order.status === 'delivered' ? 'bg-success' :
+                    order.status === 'shipped' ? 'bg-primary' :
+                    order.status === 'accepted' ? 'bg-warning' :
+                    'bg-muted-foreground'
+                  }`}></div>
+                  <div className="flex-1">
+                    <p className="font-medium">{order.material} order from {order.supplierName}</p>
+                    <p className="text-sm text-muted-foreground">{new Date(order.date).toLocaleDateString()}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                    order.status === 'delivered' ? 'bg-success text-success-foreground' :
+                    order.status === 'shipped' ? 'bg-primary text-primary-foreground' :
+                    order.status === 'accepted' ? 'bg-warning text-warning-foreground' :
+                    'bg-muted text-muted-foreground'
+                  }`}>
+                    {order.status}
+                  </span>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-warning-light">
-                <div className="w-2 h-2 bg-warning rounded-full"></div>
-                <div className="flex-1">
-                  <p className="font-medium">New message from Spice World</p>
-                  <p className="text-sm text-muted-foreground">5 hours ago</p>
+              )) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No orders yet. Start by browsing suppliers!</p>
+                  <Button className="mt-3" onClick={() => navigate("/suppliers")}>
+                    Browse Suppliers
+                  </Button>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary-light">
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <div className="flex-1">
-                  <p className="font-medium">Order placed for rice and lentils</p>
-                  <p className="text-sm text-muted-foreground">1 day ago</p>
-                </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>

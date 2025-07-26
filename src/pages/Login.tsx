@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Phone, Lock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     phone: "",
@@ -34,16 +37,26 @@ const Login = () => {
 
     setIsLoading(true);
     
-    // Simulate login process
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Simulate loading
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    toast({
-      title: "Welcome Back!",
-      description: "Login successful. Redirecting to your dashboard.",
-    });
+    const success = login(formData.phone, formData.password);
+    
+    if (success) {
+      toast({
+        title: "Welcome Back!",
+        description: "Login successful. Redirecting to your dashboard.",
+      });
+      navigate("/dashboard");
+    } else {
+      toast({
+        title: "Login Failed",
+        description: "Invalid phone number or password. Please try again.",
+        variant: "destructive"
+      });
+    }
     
     setIsLoading(false);
-    navigate("/dashboard");
   };
 
   const handleInputChange = (field: string, value: string) => {

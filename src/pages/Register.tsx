@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, User, Phone, Building, Lock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -45,16 +48,26 @@ const Register = () => {
 
     setIsLoading(true);
     
-    // Simulate registration process
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Simulate loading
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    toast({
-      title: "Registration Successful!",
-      description: "Welcome to HopeShopper. You can now access your dashboard.",
-    });
+    const success = register(formData);
+    
+    if (success) {
+      toast({
+        title: "Registration Successful!",
+        description: "Welcome to HopeShopper. You can now access your dashboard.",
+      });
+      navigate("/dashboard");
+    } else {
+      toast({
+        title: "Registration Failed",
+        description: "An account with this phone number already exists.",
+        variant: "destructive"
+      });
+    }
     
     setIsLoading(false);
-    navigate("/dashboard");
   };
 
   const handleInputChange = (field: string, value: string) => {
