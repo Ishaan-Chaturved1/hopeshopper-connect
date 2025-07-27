@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, User, Phone, Building, Lock } from "lucide-react";
+import { ArrowLeft, User, Phone, Building, Lock, Truck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
@@ -15,9 +15,11 @@ const Register = () => {
   const { toast } = useToast();
   const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [userType, setUserType] = useState<"vendor" | "supplier">("vendor");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    businessName: "",
     businessType: "",
     password: ""
   });
@@ -31,6 +33,7 @@ const Register = () => {
     if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/\D/g, ""))) {
       newErrors.phone = "Please enter a valid 10-digit phone number";
     }
+    if (!formData.businessName.trim()) newErrors.businessName = "Business name is required";
     if (!formData.businessType) newErrors.businessType = "Business type is required";
     if (!formData.password) newErrors.password = "Password is required";
     if (formData.password && formData.password.length < 6) {
@@ -56,9 +59,9 @@ const Register = () => {
     if (success) {
       toast({
         title: "Registration Successful!",
-        description: "Welcome to HopeShopper. You can now access your dashboard.",
+        description: `Welcome to HopeShopper. You can now access your ${userType} dashboard.`,
       });
-      navigate("/dashboard");
+      navigate(userType === "vendor" ? "/dashboard" : "/supplier-dashboard");
     } else {
       toast({
         title: "Registration Failed",
@@ -77,6 +80,25 @@ const Register = () => {
     }
   };
 
+  const vendorBusinessTypes = [
+    { value: "street-food", label: "Street Food Vendor" },
+    { value: "restaurant", label: "Small Restaurant" },
+    { value: "catering", label: "Catering Service" },
+    { value: "food-truck", label: "Food Truck" },
+    { value: "other", label: "Other Food Business" }
+  ];
+
+  const supplierBusinessTypes = [
+    { value: "vegetables", label: "Vegetable Supplier" },
+    { value: "spices", label: "Spice Supplier" },
+    { value: "grains", label: "Grain Supplier" },
+    { value: "dairy", label: "Dairy Supplier" },
+    { value: "meat", label: "Meat Supplier" },
+    { value: "general", label: "General Supplier" }
+  ];
+
+  const businessTypes = userType === "vendor" ? vendorBusinessTypes : supplierBusinessTypes;
+
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-custom-lg">
@@ -94,10 +116,35 @@ const Register = () => {
             <div className="w-10" />
           </div>
           <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>Join our community of successful vendors</CardDescription>
+          <CardDescription>Join our community of food entrepreneurs</CardDescription>
         </CardHeader>
 
         <CardContent>
+          {/* User Type Selector */}
+          <div className="mb-6">
+            <Label className="text-sm font-medium">I am a:</Label>
+            <div className="flex gap-2 mt-2">
+              <Button
+                type="button"
+                variant={userType === "vendor" ? "default" : "outline"}
+                className="flex-1"
+                onClick={() => setUserType("vendor")}
+              >
+                <User className="w-4 h-4 mr-2" />
+                Vendor
+              </Button>
+              <Button
+                type="button"
+                variant={userType === "supplier" ? "default" : "outline"}
+                className="flex-1"
+                onClick={() => setUserType("supplier")}
+              >
+                <Truck className="w-4 h-4 mr-2" />
+                Supplier
+              </Button>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name" className="flex items-center gap-2">
@@ -132,20 +179,36 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="businessName" className="flex items-center gap-2">
+                <Building className="w-4 h-4" />
+                Business Name
+              </Label>
+              <Input
+                id="businessName"
+                type="text"
+                value={formData.businessName}
+                onChange={(e) => handleInputChange("businessName", e.target.value)}
+                className={`transition-all duration-300 ${errors.businessName ? "border-destructive" : "focus:border-primary"}`}
+                placeholder="Enter your business name"
+              />
+              {errors.businessName && <p className="text-sm text-destructive">{errors.businessName}</p>}
+            </div>
+
+            <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Building className="w-4 h-4" />
                 Business Type
               </Label>
               <Select onValueChange={(value) => handleInputChange("businessType", value)}>
                 <SelectTrigger className={`transition-all duration-300 ${errors.businessType ? "border-destructive" : "focus:border-primary"}`}>
-                  <SelectValue placeholder="Select your business type" />
+                  <SelectValue placeholder={`Select your ${userType} type`} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="street-food">Street Food Vendor</SelectItem>
-                  <SelectItem value="restaurant">Small Restaurant</SelectItem>
-                  <SelectItem value="catering">Catering Service</SelectItem>
-                  <SelectItem value="food-truck">Food Truck</SelectItem>
-                  <SelectItem value="other">Other Food Business</SelectItem>
+                  {businessTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {errors.businessType && <p className="text-sm text-destructive">{errors.businessType}</p>}
