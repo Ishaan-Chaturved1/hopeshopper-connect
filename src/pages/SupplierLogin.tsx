@@ -22,8 +22,12 @@ const SupplierLogin = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    console.log('Attempting supplier login with:', { phone, password });
+
     try {
       const success = login(phone, password, 'supplier');
+      console.log('Login result:', success);
+      
       if (success) {
         toast({
           title: "Login Successful",
@@ -38,6 +42,7 @@ const SupplierLogin = () => {
         });
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Error",
         description: "An error occurred during login. Please try again.",
@@ -109,9 +114,9 @@ const SupplierLogin = () => {
               Demo Supplier Credentials:
             </p>
             <div className="text-xs space-y-1 bg-muted p-2 rounded">
-              <p>Phone: +91 9876543210 | Password: supplier123</p>
-              <p>Phone: +91 9876543211 | Password: supplier123</p>
-              <p>Phone: +91 9876543212 | Password: supplier123</p>
+              <p><strong>Phone:</strong> +91 9876543210 | <strong>Password:</strong> supplier123</p>
+              <p><strong>Phone:</strong> +91 9876543211 | <strong>Password:</strong> supplier123</p>
+              <p><strong>Phone:</strong> +91 9876543212 | <strong>Password:</strong> supplier123</p>
             </div>
           </div>
           

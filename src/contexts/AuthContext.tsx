@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
@@ -55,6 +54,7 @@ interface Supplier {
   verified: boolean;
   email?: string;
   businessName?: string;
+  password?: string;
 }
 
 interface Message {
@@ -89,7 +89,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Sample suppliers data
+// Sample suppliers data with passwords for login
 const sampleSuppliers: Supplier[] = [
   {
     id: '1',
@@ -104,7 +104,8 @@ const sampleSuppliers: Supplier[] = [
     location: 'Central Market, Sector 17',
     verified: true,
     email: 'fresh@veggies.com',
-    businessName: 'Fresh Veggies Co'
+    businessName: 'Fresh Veggies Co',
+    password: 'supplier123'
   },
   {
     id: '2',
@@ -119,7 +120,8 @@ const sampleSuppliers: Supplier[] = [
     location: 'Old City Spice Bazaar',
     verified: true,
     email: 'spice@world.com',
-    businessName: 'Spice World'
+    businessName: 'Spice World',
+    password: 'supplier123'
   },
   {
     id: '3',
@@ -134,7 +136,8 @@ const sampleSuppliers: Supplier[] = [
     location: 'Premium Fresh Market',
     verified: true,
     email: 'contact@freshkart.com',
-    businessName: 'FreshKart Traders'
+    businessName: 'FreshKart Traders',
+    password: 'supplier123'
   }
 ];
 
@@ -207,10 +210,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (phone: string, password: string, role: 'vendor' | 'supplier' = 'vendor'): boolean => {
+    console.log('Login attempt:', { phone, password, role });
+    
     if (role === 'supplier') {
       // Check if it's a predefined supplier
-      const supplier = suppliers.find(s => s.phone === phone);
-      if (supplier && password === 'supplier123') {
+      const supplier = suppliers.find(s => s.phone === phone && s.password === password);
+      console.log('Found supplier:', supplier);
+      
+      if (supplier) {
         const supplierUser: User = {
           id: supplier.id,
           name: supplier.name,
@@ -221,6 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: supplier.email,
           location: supplier.location
         };
+        console.log('Setting supplier user:', supplierUser);
         setUser(supplierUser);
         localStorage.setItem('hopeshopper_user', JSON.stringify(supplierUser));
         return true;
