@@ -72,7 +72,7 @@ const SupplierLogin = () => {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="Enter your phone number"
+                placeholder="Enter phone number (e.g., 9876543210)"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
@@ -114,9 +114,9 @@ const SupplierLogin = () => {
               Demo Supplier Credentials:
             </p>
             <div className="text-xs space-y-1 bg-muted p-2 rounded">
-              <p><strong>Phone:</strong> +91 9876543210 | <strong>Password:</strong> supplier123</p>
-              <p><strong>Phone:</strong> +91 9876543211 | <strong>Password:</strong> supplier123</p>
-              <p><strong>Phone:</strong> +91 9876543212 | <strong>Password:</strong> supplier123</p>
+              <p><strong>Phone:</strong> 9876543210 | <strong>Password:</strong> supplier123</p>
+              <p><strong>Phone:</strong> 9876543211 | <strong>Password:</strong> supplier123</p>
+              <p><strong>Phone:</strong> 9876543212 | <strong>Password:</strong> supplier123</p>
             </div>
           </div>
           

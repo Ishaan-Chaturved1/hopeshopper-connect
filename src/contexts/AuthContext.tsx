@@ -213,8 +213,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('Login attempt:', { phone, password, role });
     
     if (role === 'supplier') {
+      // Normalize phone number - add +91 if not present
+      const normalizedPhone = phone.startsWith('+91') ? phone : `+91 ${phone}`;
+      console.log('Normalized phone:', normalizedPhone);
+      
       // Check if it's a predefined supplier
-      const supplier = suppliers.find(s => s.phone === phone && s.password === password);
+      const supplier = suppliers.find(s => s.phone === normalizedPhone && s.password === password);
       console.log('Found supplier:', supplier);
       
       if (supplier) {
