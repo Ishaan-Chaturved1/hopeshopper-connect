@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +16,13 @@ const SupplierRequests = () => {
     user ? getSupplierRequests(user.id) : []
   );
 
+  useEffect(() => {
+    if (!user || user.role !== 'supplier') {
+      navigate("/supplier-login");
+    }
+  }, [user, navigate]);
+
   if (!user || user.role !== 'supplier') {
-    navigate("/supplier-login");
     return null;
   }
 

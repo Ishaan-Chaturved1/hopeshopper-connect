@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,13 @@ const SupplierProfile = () => {
     location: ""
   });
 
+  useEffect(() => {
+    if (!user || user.role !== 'supplier') {
+      navigate("/supplier-login");
+    }
+  }, [user, navigate]);
+
   if (!user || user.role !== 'supplier') {
-    navigate("/supplier-login");
     return null;
   }
 
