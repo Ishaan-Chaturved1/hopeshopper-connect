@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface User {
@@ -7,6 +8,9 @@ interface User {
   businessType: string;
   businessName?: string;
   avatar?: string;
+  role?: 'vendor' | 'supplier';
+  email?: string;
+  location?: string;
 }
 
 interface Order {
@@ -24,6 +28,19 @@ interface Order {
   paymentScreenshot?: string;
 }
 
+interface Request {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  supplierId: string;
+  material: string;
+  quantity: number;
+  deliveryDate: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'delivered';
+  requestDate: string;
+  deliveryAddress: string;
+}
+
 interface Supplier {
   id: string;
   name: string;
@@ -36,6 +53,8 @@ interface Supplier {
   avatar: string;
   location: string;
   verified: boolean;
+  email?: string;
+  businessName?: string;
 }
 
 interface Message {
@@ -50,23 +69,27 @@ interface Message {
 
 interface AuthContextType {
   user: User | null;
-  login: (phone: string, password: string) => boolean;
+  login: (phone: string, password: string, role?: 'vendor' | 'supplier') => boolean;
   register: (userData: Omit<User, 'id'> & { password: string }) => boolean;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => void;
   orders: Order[];
+  requests: Request[];
   suppliers: Supplier[];
   messages: Message[];
   addOrder: (order: Omit<Order, 'id' | 'userId'>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
+  updateRequestStatus: (requestId: string, status: Request['status']) => void;
   sendMessage: (receiverId: string, message: string, type?: 'text' | 'image', attachment?: string) => void;
   getConversations: () => Array<{userId: string, userName: string, lastMessage: string, avatar: string}>;
   searchSuppliers: (term: string, category: string) => Supplier[];
+  getSupplierRequests: (supplierId: string) => Request[];
+  getSupplierOrders: (supplierId: string) => Order[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Enhanced sample data with more suppliers from surrounding locations
+// Sample suppliers data
 const sampleSuppliers: Supplier[] = [
   {
     id: '1',
@@ -79,7 +102,9 @@ const sampleSuppliers: Supplier[] = [
     phone: '+91 9876543210',
     avatar: '/placeholder.svg',
     location: 'Central Market, Sector 17',
-    verified: true
+    verified: true,
+    email: 'fresh@veggies.com',
+    businessName: 'Fresh Veggies Co'
   },
   {
     id: '2',
@@ -92,143 +117,71 @@ const sampleSuppliers: Supplier[] = [
     phone: '+91 9876543211',
     avatar: '/placeholder.svg',
     location: 'Old City Spice Bazaar',
-    verified: true
+    verified: true,
+    email: 'spice@world.com',
+    businessName: 'Spice World'
   },
   {
     id: '3',
-    name: 'Grain Masters',
-    category: 'grains',
-    materials: ['Rice', 'Wheat', 'Lentils', 'Chickpeas', 'Black Dal', 'Barley'],
-    rating: 4.7,
+    name: 'FreshKart Traders',
+    category: 'vegetables',
+    materials: ['Premium Vegetables', 'Organic Produce', 'Exotic Vegetables'],
+    rating: 4.9,
     distance: '3.2 km',
-    price: '₹30-120/kg',
+    price: '₹60-300/kg',
     phone: '+91 9876543212',
     avatar: '/placeholder.svg',
-    location: 'Agricultural Market, Phase 2',
-    verified: true
+    location: 'Premium Fresh Market',
+    verified: true,
+    email: 'contact@freshkart.com',
+    businessName: 'FreshKart Traders'
+  }
+];
+
+// Sample requests data
+const sampleRequests: Request[] = [
+  {
+    id: '1',
+    vendorId: '1',
+    vendorName: 'Poorni\'s Street Food',
+    supplierId: '1',
+    material: 'Onions',
+    quantity: 50,
+    deliveryDate: '2024-01-15',
+    status: 'pending',
+    requestDate: '2024-01-10',
+    deliveryAddress: 'Street Food Corner, Main Road'
   },
   {
-    id: '4',
-    name: 'Dairy Fresh',
-    category: 'dairy',
-    materials: ['Milk', 'Cheese', 'Butter', 'Yogurt', 'Paneer', 'Cream'],
-    rating: 4.9,
-    distance: '1.5 km',
-    price: '₹25-150/kg',
-    phone: '+91 9876543213',
-    avatar: '/placeholder.svg',
-    location: 'Green Valley Dairy Farm',
-    verified: true
+    id: '2',
+    vendorId: '2',
+    vendorName: 'Ravi\'s Tiffin Center',
+    supplierId: '1',
+    material: 'Tomatoes',
+    quantity: 30,
+    deliveryDate: '2024-01-16',
+    status: 'accepted',
+    requestDate: '2024-01-11',
+    deliveryAddress: 'Tiffin Center, Park Street'
   },
   {
-    id: '5',
-    name: 'Golden Harvest',
-    category: 'vegetables',
-    materials: ['Bell Peppers', 'Broccoli', 'Cauliflower', 'Green Beans', 'Peas'],
-    rating: 4.5,
-    distance: '4.1 km',
-    price: '₹60-250/kg',
-    phone: '+91 9876543214',
-    avatar: '/placeholder.svg',
-    location: 'Suburban Farm District',
-    verified: true
-  },
-  {
-    id: '6',
-    name: 'Aromatic Spices Hub',
-    category: 'spices',
-    materials: ['Cardamom', 'Cinnamon', 'Star Anise', 'Nutmeg', 'Cloves', 'Bay Leaves'],
-    rating: 4.4,
-    distance: '2.9 km',
-    price: '₹100-800/kg',
-    phone: '+91 9876543215',
-    avatar: '/placeholder.svg',
-    location: 'Heritage Spice Market',
-    verified: true
-  },
-  {
-    id: '7',
-    name: 'Premium Grains Co',
-    category: 'grains',
-    materials: ['Basmati Rice', 'Quinoa', 'Oats', 'Brown Rice', 'Millet', 'Buckwheat'],
-    rating: 4.6,
-    distance: '3.8 km',
-    price: '₹45-200/kg',
-    phone: '+91 9876543216',
-    avatar: '/placeholder.svg',
-    location: 'Organic Grain Center',
-    verified: true
-  },
-  {
-    id: '8',
-    name: 'Farm Fresh Dairy',
-    category: 'dairy',
-    materials: ['Organic Milk', 'Greek Yogurt', 'Cottage Cheese', 'Fresh Cream', 'Ghee'],
-    rating: 4.7,
-    distance: '5.2 km',
-    price: '₹40-180/kg',
-    phone: '+91 9876543217',
-    avatar: '/placeholder.svg',
-    location: 'Riverside Organic Farm',
-    verified: true
-  },
-  {
-    id: '9',
-    name: 'Metro Vegetables',
-    category: 'vegetables',
-    materials: ['Mushrooms', 'Zucchini', 'Eggplant', 'Okra', 'Bitter Gourd', 'Bottle Gourd'],
-    rating: 4.3,
-    distance: '1.2 km',
-    price: '₹40-180/kg',
-    phone: '+91 9876543218',
-    avatar: '/placeholder.svg',
-    location: 'City Center Wholesale',
-    verified: true
-  },
-  {
-    id: '10',
-    name: 'Exotic Spice Traders',
-    category: 'spices',
-    materials: ['Saffron', 'Vanilla', 'Paprika', 'Oregano', 'Thyme', 'Rosemary'],
-    rating: 4.8,
-    distance: '6.5 km',
-    price: '₹200-2000/kg',
-    phone: '+91 9876543219',
-    avatar: '/placeholder.svg',
-    location: 'International Spice Plaza',
-    verified: true
-  },
-  {
-    id: '11',
-    name: 'Healthy Grains Store',
-    category: 'grains',
-    materials: ['Chia Seeds', 'Flax Seeds', 'Sesame Seeds', 'Pumpkin Seeds', 'Sunflower Seeds'],
-    rating: 4.5,
-    distance: '4.7 km',
-    price: '₹80-400/kg',
-    phone: '+91 9876543220',
-    avatar: '/placeholder.svg',
-    location: 'Health Food District',
-    verified: true
-  },
-  {
-    id: '12',
-    name: 'Village Dairy Products',
-    category: 'dairy',
-    materials: ['Buffalo Milk', 'Curd', 'Lassi', 'Buttermilk', 'Khoya', 'Malai'],
-    rating: 4.4,
-    distance: '7.1 km',
-    price: '₹30-120/kg',
-    phone: '+91 9876543221',
-    avatar: '/placeholder.svg',
-    location: 'Traditional Village Market',
-    verified: true
+    id: '3',
+    vendorId: '3',
+    vendorName: 'Sita\'s Snacks',
+    supplierId: '2',
+    material: 'Red Chili',
+    quantity: 15,
+    deliveryDate: '2024-01-17',
+    status: 'delivered',
+    requestDate: '2024-01-12',
+    deliveryAddress: 'Snacks Corner, Market Square'
   }
 ];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [requests, setRequests] = useState<Request[]>(sampleRequests);
   const [messages, setMessages] = useState<Message[]>([]);
   const [suppliers] = useState<Supplier[]>(sampleSuppliers);
 
@@ -236,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Load user from localStorage on mount
     const storedUser = localStorage.getItem('hopeshopper_user');
     const storedOrders = localStorage.getItem('hopeshopper_orders');
+    const storedRequests = localStorage.getItem('hopeshopper_requests');
     const storedMessages = localStorage.getItem('hopeshopper_messages');
     
     if (storedUser) {
@@ -244,20 +198,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedOrders) {
       setOrders(JSON.parse(storedOrders));
     }
+    if (storedRequests) {
+      setRequests(JSON.parse(storedRequests));
+    }
     if (storedMessages) {
       setMessages(JSON.parse(storedMessages));
     }
   }, []);
 
-  const login = (phone: string, password: string): boolean => {
-    const storedUsers = JSON.parse(localStorage.getItem('hopeshopper_users') || '[]');
-    const foundUser = storedUsers.find((u: any) => u.phone === phone && u.password === password);
-    
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('hopeshopper_user', JSON.stringify(userWithoutPassword));
-      return true;
+  const login = (phone: string, password: string, role: 'vendor' | 'supplier' = 'vendor'): boolean => {
+    if (role === 'supplier') {
+      // Check if it's a predefined supplier
+      const supplier = suppliers.find(s => s.phone === phone);
+      if (supplier && password === 'supplier123') {
+        const supplierUser: User = {
+          id: supplier.id,
+          name: supplier.name,
+          phone: supplier.phone,
+          businessType: supplier.category,
+          businessName: supplier.businessName,
+          role: 'supplier',
+          email: supplier.email,
+          location: supplier.location
+        };
+        setUser(supplierUser);
+        localStorage.setItem('hopeshopper_user', JSON.stringify(supplierUser));
+        return true;
+      }
+    } else {
+      // Vendor login (existing logic)
+      const storedUsers = JSON.parse(localStorage.getItem('hopeshopper_users') || '[]');
+      const foundUser = storedUsers.find((u: any) => u.phone === phone && u.password === password);
+      
+      if (foundUser) {
+        const { password: _, ...userWithoutPassword } = foundUser;
+        const vendorUser = { ...userWithoutPassword, role: 'vendor' };
+        setUser(vendorUser);
+        localStorage.setItem('hopeshopper_user', JSON.stringify(vendorUser));
+        return true;
+      }
     }
     return false;
   };
@@ -273,7 +252,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newUser = {
       ...userData,
       id: Date.now().toString(),
-      businessName: `${userData.name}'s ${userData.businessType === 'street-food' ? 'Street Food Corner' : 'Business'}`
+      businessName: userData.businessName || `${userData.name}'s ${userData.businessType === 'street-food' ? 'Street Food Corner' : 'Business'}`,
+      role: userData.role || 'vendor'
     };
 
     storedUsers.push(newUser);
@@ -319,6 +299,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('hopeshopper_orders', JSON.stringify(updatedOrders));
   };
 
+  const updateRequestStatus = (requestId: string, status: Request['status']) => {
+    const updatedRequests = requests.map(request =>
+      request.id === requestId ? { ...request, status } : request
+    );
+    setRequests(updatedRequests);
+    localStorage.setItem('hopeshopper_requests', JSON.stringify(updatedRequests));
+  };
+
   const sendMessage = (receiverId: string, message: string, type: 'text' | 'image' = 'text', attachment?: string) => {
     if (user) {
       const newMessage: Message = {
@@ -347,6 +335,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const matchesCategory = category === "all" || supplier.category === category;
       return matchesSearch && matchesCategory;
     });
+  };
+
+  const getSupplierRequests = (supplierId: string) => {
+    return requests.filter(request => request.supplierId === supplierId);
+  };
+
+  const getSupplierOrders = (supplierId: string) => {
+    return orders.filter(order => order.supplierId === supplierId);
   };
 
   const getConversations = () => {
@@ -381,59 +377,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={{
       user,
-      login: (phone: string, password: string): boolean => {
-        const storedUsers = JSON.parse(localStorage.getItem('hopeshopper_users') || '[]');
-        const foundUser = storedUsers.find((u: any) => u.phone === phone && u.password === password);
-        
-        if (foundUser) {
-          const { password: _, ...userWithoutPassword } = foundUser;
-          setUser(userWithoutPassword);
-          localStorage.setItem('hopeshopper_user', JSON.stringify(userWithoutPassword));
-          return true;
-        }
-        return false;
-      },
-      register: (userData: Omit<User, 'id'> & { password: string }): boolean => {
-        const storedUsers = JSON.parse(localStorage.getItem('hopeshopper_users') || '[]');
-        const existingUser = storedUsers.find((u: any) => u.phone === userData.phone);
-        
-        if (existingUser) {
-          return false;
-        }
-
-        const newUser = {
-          ...userData,
-          id: Date.now().toString(),
-          businessName: `${userData.name}'s ${userData.businessType === 'street-food' ? 'Street Food Corner' : 'Business'}`
-        };
-
-        storedUsers.push(newUser);
-        localStorage.setItem('hopeshopper_users', JSON.stringify(storedUsers));
-
-        const { password: _, ...userWithoutPassword } = newUser;
-        setUser(userWithoutPassword);
-        localStorage.setItem('hopeshopper_user', JSON.stringify(userWithoutPassword));
-        return true;
-      },
-      logout: () => {
-        setUser(null);
-        localStorage.removeItem('hopeshopper_user');
-      },
-      updateProfile: (userData: Partial<User>) => {
-        if (user) {
-          const updatedUser = { ...user, ...userData };
-          setUser(updatedUser);
-          localStorage.setItem('hopeshopper_user', JSON.stringify(updatedUser));
-        }
-      },
-      orders: user ? orders.filter(order => order.userId === user.id) : [],
+      login,
+      register,
+      logout,
+      updateProfile,
+      orders: user && user.role === 'vendor' ? orders.filter(order => order.userId === user.id) : orders,
+      requests,
       suppliers,
       messages,
       addOrder,
       updateOrderStatus,
+      updateRequestStatus,
       sendMessage,
       getConversations,
-      searchSuppliers
+      searchSuppliers,
+      getSupplierRequests,
+      getSupplierOrders
     }}>
       {children}
     </AuthContext.Provider>
